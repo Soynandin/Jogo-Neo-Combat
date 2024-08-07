@@ -28,7 +28,7 @@ public class EstadoJogo extends Estado {
 		super(jogo);
 		raposa = new Raposa(jogo, 50, 280);
 		cavaleiro = new Cavaleiro(jogo, 300, 280);
-		tocarMusica("RecursoExterno/Mp3/MusicaFundo.mp3");
+		tocarMusica("JogoLPIII\\RecursoExterno\\Mp3\\MusicaFundo.mp3");
 	}
 
 	@Override
@@ -84,7 +84,7 @@ public class EstadoJogo extends Estado {
 
 	@Override
 	public void render(Graphics g) {
-		ImageIcon healthBar = new ImageIcon("Imagem/jogo/healthBar.png");
+		ImageIcon healthBar = new ImageIcon("JogoLPIII\\Imagem\\jogo\\healthBar.png");
 
 		// print ui for raposa
 		g.setColor(Color.PINK);
