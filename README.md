@@ -14,6 +14,8 @@
  O Cavaleiro 
  Controles de movimento: Up, Down, Left, Right | Controles de ataque: 1, 2, 3
 
+-   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+
 *US US US*
 This game was developed during my time at the University as a form of assessment in the Programming Language III course.
 The game is based on the Street Fighter style, with the purpose of developing an alternative and efficient dynamic in Java game development.
