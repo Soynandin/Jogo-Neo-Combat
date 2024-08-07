@@ -26,7 +26,6 @@ public class EstadoJogo extends Estado {
 
 	public EstadoJogo(Jogo jogo) {
 		super(jogo);
-		// TODO Auto-generated constructor stub
 		raposa = new Raposa(jogo, 50, 280);
 		cavaleiro = new Cavaleiro(jogo, 300, 280);
 		tocarMusica("RecursoExterno/Mp3/MusicaFundo.mp3");
