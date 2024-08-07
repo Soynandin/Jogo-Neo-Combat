@@ -8,10 +8,10 @@
 
  - Controle de Movimento
 
- A Raposa 
+ A Raposa - 
  Controles de movimento: W, A, S, D | Controles de ataque: G, H, J  
  
- O Cavaleiro 
+ O Cavaleiro - 
  Controles de movimento: Up, Down, Left, Right | Controles de ataque: 1, 2, 3
 
 -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -25,8 +25,8 @@ There are two characters, each with three attacks: the Fox and the Knight.
 
 - Movement Controls
 
-The Fox
+The Fox - 
 Movement Controls: W, A, S, D | Attack Controls: G, H, J
 
-The Knight
+The Knight - 
 Movement Controls: Up, Down, Left, Right | Attack Controls: 1, 2, 3
