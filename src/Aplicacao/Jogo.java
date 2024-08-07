@@ -177,7 +177,7 @@ public class Jogo extends Canvas implements Runnable {
 		
 		/* ALL DRAWING HERE */
 		// init maps
-		ImageIcon forestStage = new ImageIcon("JogoLPIII\\Imagem\\jogo\\forest_stage.gif");
+		ImageIcon forestStage = new ImageIcon("Imagem\\jogo\\forest_stage.gif");
 		
 		if (forestStage.getImage() != null) {
 	        g.drawImage(forestStage.getImage(), -900, -220, forestStage.getIconWidth() * 2, forestStage.getIconHeight() * 2, null);
