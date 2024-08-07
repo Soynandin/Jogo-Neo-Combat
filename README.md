@@ -6,7 +6,7 @@
 
  Possui dois personagens, com Três ataques cada, a Raposa e o Cavaleiro. 
 
- - Controle de Movimento
+ - Controles
 
  A Raposa - 
  Controles de movimento: W, A, S, D | Controles de ataque: G, H, J  
@@ -23,7 +23,7 @@ Animations are applied using SpriteSheet and Icons with the graphical resources 
 
 There are two characters, each with three attacks: the Fox and the Knight.
 
-- Movement Controls
+- Controls
 
 The Fox - 
 Movement Controls: W, A, S, D | Attack Controls: G, H, J
