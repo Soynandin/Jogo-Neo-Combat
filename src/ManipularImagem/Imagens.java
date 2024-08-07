@@ -112,7 +112,6 @@ public class Imagens {
         
         int p2_larguraSpriteParado = p2_paradoSheet.getSheet().getWidth() / 4;
         int p2_alturaSpriteParado = p2_paradoSheet.getSheet().getHeight();
-        //p2_parado = p2_paradoSheet.getSprites(4, p2_larguraSpriteParado, p2_alturaSpriteParado);
         for (int i = 0; i < 4; i++) {
             int x = (3-i) * p2_larguraSpriteParado;
             p2_parado[i] = p2_paradoSheet.getSprite(x, 0, p2_larguraSpriteParado, p2_alturaSpriteParado);
@@ -145,7 +144,6 @@ public class Imagens {
 
         int p2_larguraSpriteAtaque1 = p2_ataque1Sheet.getSheet().getWidth() / 5;
         int p2_alturaSpriteAtaque1 = p2_ataque1Sheet.getSheet().getHeight();
-        //p2_ataque_1 = p2_ataque1Sheet.getSprites(5, p2_larguraSpriteAtaque1, p2_alturaSpriteAtaque1);
         for (int i = 0; i < 5; i++) {
             int x = (4-i) * p2_larguraSpriteAtaque1;
             p2_ataque_1[i] = p2_ataque1Sheet.getSprite(x, 0, p2_larguraSpriteAtaque1, p2_alturaSpriteAtaque1);
@@ -153,7 +151,6 @@ public class Imagens {
 
         int p2_larguraSpriteAtaque2 = p2_ataque2Sheet.getSheet().getWidth() / 4;
         int p2_alturaSpriteAtaque2 = p2_ataque2Sheet.getSheet().getHeight();
-        //p2_ataque_2 = p2_ataque2Sheet.getSprites(4, p2_larguraSpriteAtaque2, p2_alturaSpriteAtaque2);
         for (int i = 0; i < 4; i++) {
             int x = (3-i) * p2_larguraSpriteAtaque2;
             p2_ataque_2[i] = p2_ataque2Sheet.getSprite(x, 0, p2_larguraSpriteAtaque2, p2_alturaSpriteAtaque2);
@@ -161,7 +158,6 @@ public class Imagens {
 
         int p2_larguraSpriteAtaque3 = p2_ataque3Sheet.getSheet().getWidth() / 4;
         int p2_alturaSpriteAtaque3 = p2_ataque3Sheet.getSheet().getHeight();
-        //p2_ataque_3 = p2_ataque3Sheet.getSprites(4, p2_larguraSpriteAtaque3, p2_alturaSpriteAtaque3);
         for (int i = 0; i < 4; i++) {
             int x = (3-i) * p2_larguraSpriteAtaque3;
             p2_ataque_3[i] = p2_ataque3Sheet.getSprite(x, 0, p2_larguraSpriteAtaque3, p2_alturaSpriteAtaque3);
@@ -169,7 +165,6 @@ public class Imagens {
 
         int p2_larguraSpriteLevaDano = p2_sofreDanoSheet.getSheet().getWidth() / 2;
         int p2_alturaSpriteLevaDano = p2_sofreDanoSheet.getSheet().getHeight();
-        //p2_levaDano = p2_sofreDanoSheet.getSprites(2, p2_larguraSpriteLevaDano, p2_alturaSpriteLevaDano);
         for (int i = 0; i < 2; i++) {
             int x = (1-i) * p2_larguraSpriteLevaDano;
             p2_levaDano[i] = p2_sofreDanoSheet.getSprite(x, 0, p2_larguraSpriteLevaDano, p2_alturaSpriteLevaDano);
@@ -177,7 +172,6 @@ public class Imagens {
 
         int p2_larguraSpriteMorrendo = p2_morrerSheet.getSheet().getWidth() / 6;
         int p2_alturaSpriteMorrendo = p2_morrerSheet.getSheet().getHeight();
-        //p2_morrendo = p2_morrerSheet.getSprites(6, p2_larguraSpriteMorrendo, p2_alturaSpriteMorrendo);
         for (int i = 0; i < 6; i++) {
             int x = (5-i) * p2_larguraSpriteMorrendo;
             p2_morrendo[i] = p2_morrerSheet.getSprite(x, 0, p2_larguraSpriteMorrendo, p2_alturaSpriteMorrendo);

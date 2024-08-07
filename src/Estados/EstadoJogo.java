@@ -17,143 +17,148 @@ import javazoom.jl.player.advanced.AdvancedPlayer;
 
 public class EstadoJogo extends Estado {
 
-	private Raposa raposa;
-	private Cavaleiro cavaleiro;
+	// Instância da raposa e do cavaleiro
+    private Raposa raposa; 
+    private Cavaleiro cavaleiro;
 
-	private Thread musicThread;
-	private AdvancedPlayer player;
-	private boolean playing = false;
+    private Thread musicaThread; // Thread para tocar a música
+    private AdvancedPlayer player; // Reprodutor de música
+    private boolean musica_esta_tocando = false; // Flag para verificar se a música está tocando
 
-	public EstadoJogo(Jogo jogo) {
-		super(jogo);
-		raposa = new Raposa(jogo, 50, 280);
-		cavaleiro = new Cavaleiro(jogo, 300, 280);
-		tocarMusica("RecursoExterno\\Mp3\\MusicaFundo.mp3");
-	}
+    public EstadoJogo(Jogo jogo) {
+        super(jogo);
+        raposa = new Raposa(jogo, 50, 280); 
+        cavaleiro = new Cavaleiro(jogo, 300, 280); 
+        tocarMusica("RecursoExterno\\Mp3\\MusicaFundo.mp3");
+    }
 
-	@Override
-	public void tick() {
-		// update hitboxes, attack boxes
-		raposa.getAtaqueRange();
-		raposa.getPersonagemRange();
+    @Override
+    public void tick() {
+        // Atualiza as áreas de ataque e colisão da raposa
+        raposa.getAtaqueRange();
+        raposa.getPersonagemRange();
 
-		cavaleiro.getAttackBounds();
-		cavaleiro.getHitBounds();
+        // Atualiza as áreas de ataque e colisão do cavaleiro
+        cavaleiro.getAtaqueRange();
+        cavaleiro.getPersonagemRange();
 
-		raposa.tick();
-		cavaleiro.tick();
+        // Atualiza o estado da raposa e do cavaleiro
+        raposa.tick();
+        cavaleiro.tick();
+    }
 
-	}
+    public void tocarMusica(String caminhoArquivo) {
+        musicaThread = new Thread(() -> {
+            while (musica_esta_tocando) {
+                try (FileInputStream fis = new FileInputStream(caminhoArquivo)) {
+                    player = new AdvancedPlayer(fis); // Inicializa o reprodutor de música
+                    player.play(); // Inicia a reprodução da música
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace(); 
+                    break; 
+                } catch (JavaLayerException | IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-	public void tocarMusica(String caminhoArquivo) {
-		musicThread = new Thread(() -> {
-			while (playing) {
-				try (FileInputStream fis = new FileInputStream(caminhoArquivo)) {
-					player = new AdvancedPlayer(fis);
-					player.play();
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-					break; // Exit the loop if the file is not found
-				} catch (JavaLayerException | IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
+        musica_esta_tocando = true; // Define que a música está tocando
+        musicaThread.start(); // Inicia a thread de música
+    }
 
-		playing = true;
-		musicThread.start();
-	}
-	
-	 public void pararMusica() {
-	        playing = false;
-	        if (player != null) {
-	            player.close();
-	        }
-	        if (musicThread != null) {
-	            try {
-	                musicThread.join();
-	            } catch (InterruptedException e) {
-	                e.printStackTrace();
-	            }
-	        }
-	    }
+    public void pararMusica() {
+        musica_esta_tocando = false; // Define que a música deve parar
+        if (player != null) {
+            player.close(); // Fecha o reprodutor de música
+        }
+        if (musicaThread != null) {
+            try {
+                musicaThread.join(); // Aguarda o término da thread de música
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-	    public boolean isPlaying() {
-	        return playing;
-	    }
+    public boolean seMusica_esta_tocando() {
+        return musica_esta_tocando; // Retorna se a música está tocando
+    }
 
-	@Override
-	public void render(Graphics g) {
-		ImageIcon healthBar = new ImageIcon("Imagem\\jogo\\healthBar.png");
+    @Override
+    public void renderizar(Graphics g) {
+		// Carrega a imagem da barra de saúde
+        ImageIcon healthBar = new ImageIcon("Imagem\\jogo\\healthBar.png"); 
 
-		// print ui for raposa
-		g.setColor(Color.PINK);
-		double porcentagemRaposa = raposa.getVida() / 100.0;
-		g.fillRect(61, 19, (int) (173 * porcentagemRaposa), 11);
+        // Desenha a barra de vida da raposa
+        g.setColor(Color.PINK);
+        double porcentagemRaposa = raposa.getVida() / 100.0; // Calcula a porcentagem de vida da raposa
+        g.fillRect(61, 19, (int) (173 * porcentagemRaposa), 11); // Desenha a barra de vida da raposa
 
-		// print ui for cavaleiro
-		g.setColor(Color.PINK);
-		double porcentagemCavaleiro = cavaleiro.getHealth() / 100.0;
-		int cavaleiroBarWidth = (int) (173 * porcentagemCavaleiro);
-		g.fillRect(99 + 29 + 144 + (173 - cavaleiroBarWidth), 19, cavaleiroBarWidth, 11);
+        // Desenha a barra de vida do cavaleiro
+        g.setColor(Color.PINK);
+        double porcentagemCavaleiro = cavaleiro.getVida() / 100.0; // Calcula a porcentagem de vida do cavaleiro
+        int cavaleiroBarWidth = (int) (173 * porcentagemCavaleiro); // Calcula a largura da barra de vida do cavaleiro
+        g.fillRect(99 + 29 + 144 + (173 - cavaleiroBarWidth), 19, cavaleiroBarWidth, 11); // Desenha a barra de vida do cavaleiro
 
-		// drawn last so that rect and ui could be under
-		g.drawImage(healthBar.getImage(), 60, 16, (int) (healthBar.getIconWidth() * 1.2),
-				(int) (healthBar.getIconHeight() * 1.2), null);
+        // Desenha a imagem da barra de saúde, que deve estar acima das barras de vida
+        g.drawImage(healthBar.getImage(), 60, 16, (int) (healthBar.getIconWidth() * 1.2),
+                (int) (healthBar.getIconHeight() * 1.2), null);
 
-		raposa.render(g);
-		cavaleiro.render(g);
+        // Renderiza a raposa e o cavaleiro
+        raposa.renderizar(g);
+        cavaleiro.renderizar(g);
 
-		g.setColor(Color.BLACK);
+        g.setColor(Color.BLACK);
 
-		if (cavaleiro.getHealth() <= 0) {
-			int pos = 150;
-			String raposaG = "RAPOSA WINS THE GAME!";
-			g.fillRect(147, 138, Jogo.WIDTH + 190, Jogo.HEIGHT + 20);
-			g.setColor(Color.WHITE);
-			//int width = g.getFontMetrics().stringWidth(raposaG);
-			g.drawString(raposaG, Jogo.WIDTH + pos, Jogo.HEIGHT + pos);
+        // Verifica se o cavaleiro perdeu e a raposa venceu
+        if (cavaleiro.getVida() <= 0) {
+            int pos = 150;
+            String raposaG = "RAPOSA WINS THE GAME!"; // Mensagem de vitória da raposa
+            g.fillRect(147, 138, Jogo.WIDTH + 190, Jogo.HEIGHT + 20); // Desenha o fundo para a mensagem
+            g.setColor(Color.WHITE);
+            g.drawString(raposaG, Jogo.WIDTH + pos, Jogo.HEIGHT + pos); // Desenha a mensagem de vitória da raposa
+            cavaleiro.iniciarAnimacaoMorte();
+        // Verifica se a raposa perdeu e o cavaleiro venceu
+        } else if (raposa.getVida() <= 0) {
+            int pos = 150;
+            String cavaleiroChernoWin = "CAVALEIRO WINS THE GAME!"; // Mensagem de vitória do cavaleiro
+            g.fillRect(147, 138, Jogo.WIDTH + 190, Jogo.HEIGHT + 20); // Desenha o fundo para a mensagem
+            g.setColor(Color.WHITE);
+            g.drawString(cavaleiroChernoWin, Jogo.WIDTH + pos, Jogo.HEIGHT + pos); // Desenha a mensagem de vitória do cavaleiro
+            raposa.iniciarAnimacaoMorte();
+        }
+    }
 
-		} else if (raposa.getVida() <= 0) {
-			int pos = 150;
-			String cavaleiroChernoWin = "CAVALEIRO WINS THE GAME!";
-			g.fillRect(147, 138, Jogo.WIDTH + 190, Jogo.HEIGHT + 20);
-			g.setColor(Color.WHITE);
-			//int width = g.getFontMetrics().stringWidth(cavaleiroChernoWin);
-			g.drawString(cavaleiroChernoWin, Jogo.WIDTH + pos, Jogo.HEIGHT + pos);
-		}
-	}
+    // GET E SET Raposa:
 
-	// GETTERS AND SETTERS:
+    public Rectangle getRaposaRangeHit() {
+        return raposa.getPersonagemRange(); // Retorna a área de colisão da raposa
+    }
 
-	public Rectangle getRaposaRangeHit() {
-		return raposa.getPersonagemRange();
-	}
+    public Rectangle getRaposaAtaqueHit() {
+        return raposa.getAtaqueRange(); // Retorna a área de ataque da raposa
+    }
 
-	public Rectangle getRaposaAtaqueHit() {
-		return raposa.getAtaqueRange();
-	}
+    public int getRaposaX() {
+        return raposa.getRaposaX(); // Retorna a posição X da raposa
+    }
 
-	public int getRaposaX() {
-		return raposa.getRaposaX();
-	}
+    // GET E SET Cavaleiro:
 
-	// GETTERS AND SETTERS:
+    public Rectangle getCavaleiroRangeHit() {
+        return cavaleiro.getPersonagemRange(); // Retorna a área de colisão do cavaleiro
+    }
 
-	public Rectangle getCavaleiroRangeHit() {
-		return cavaleiro.getHitBounds();
-	}
+    public Rectangle getCavaleiroAtaqueHit() {
+        return cavaleiro.getAtaqueRange(); // Retorna a área de ataque do cavaleiro
+    }
 
-	public Rectangle getCavaleiroAtaqueHit() {
-		return cavaleiro.getAttackBounds();
-	}
+    public int getCavaleiroX() {
+        return cavaleiro.getCavaleiroX(); // Retorna a posição X do cavaleiro
+    }
 
-	public int getCavaleiroX() {
-		return cavaleiro.getRaposaX();
-	}
-
-	@Override
-	public void music() {
-	}
-
+    @Override
+    public void musica() {
+        // Método vazio, possivelmente reservado para futuras implementações
+    }
 }

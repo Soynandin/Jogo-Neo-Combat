@@ -15,209 +15,193 @@ import Estados.Estado;
 import Estados.EstadoJogo;
 import ManipularImagem.Imagens;
 
+/*
+	Classe que representa o jogo e implementa a interface Runnable,
+	permitindo que ele seja executado em uma thread separada
+*/
 public class Jogo extends Canvas implements Runnable {
-
-	private static final long serialVersionUID = 1L;//-------------------------------------------corrigir crop raposa
+	private static final long serialVersionUID = 1L;
 
 	public static final String titulo = "Neo-Combat";
+
 	public static final int largura = 256;
 	public static final int altura = 224;
 	public static final int escala = 2;
 
-	public boolean executar = false;
+	// Contador para rastrear atualizações de frame
 	public int atualizaFrame = 0;
 
-	// graphics
-	//private Graphics g;
-
-	// states
-	//private Estado menuEstado;
+	// Variável para controlar se o jogo está em execução ou não
+	public boolean executar = false;
+	
+	// Instâncias para representar o estado atual do jogo, o controle de teclas, e o JFrame da aplicação
 	private Estado gameEstado;
-
-	// input
 	private Teclas controleTeclas;
+	private JFrame app;
 
-	// init jFrame
-	private JFrame frame;
-
-	// int map
-	//private int mapa = 0;
-
+	// Construtor da classe Jogo, inicializa o JFrame e configura suas propriedades
 	public Jogo() {
-		frame = new JFrame(titulo);
-		frame.setSize(largura * escala, altura * escala);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setLayout(new BorderLayout());
+		app = new JFrame(titulo);
+		app.setSize(largura * escala, altura * escala);
+		app.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		app.setLayout(new BorderLayout());
+		app.add(this, BorderLayout.CENTER);
+		app.setUndecorated(false);
+		app.setAlwaysOnTop(true);
+		app.setResizable(false);
+		app.setVisible(true);
+		app.setLocationRelativeTo(null);
 
-		frame.add(this, BorderLayout.CENTER);
-
-		frame.setUndecorated(false);
-		frame.setAlwaysOnTop(true);
-		frame.setResizable(false);
-		frame.setVisible(true);
-		frame.setLocationRelativeTo(null);
 		setFocusable(false);
 
-		// user input
 		controleTeclas = new Teclas();
-		frame.addKeyListener(controleTeclas);
+		app.addKeyListener(controleTeclas);
 
-		// pack everything
-		frame.pack();
+		app.pack();
 	}
 
-	public synchronized void start() throws IOException {
+	// Método sincronizado que inicia o jogo, configurando o estado inicial e iniciando a thread
+	public synchronized void iniciar() throws IOException {
 		executar = true;
-		
 		Imagens.instanciaAnimacao();
-		
 		gameEstado = new EstadoJogo(this);
-		Estado.setState(gameEstado);
-		
-		//mapa=0;
+		Estado.setEstado(gameEstado);
 		new Thread(this).start();
 	}
 
-	public synchronized void stop() {
-		// if program is stopped, running is false
+	// Método sincronizado para parar a execução do jogo
+	public synchronized void parar() {
 		executar = false;
 	}
 
+	// Método run que será executado pela thread. Controla o loop principal do jogo
 	@Override
 	public void run() {
-		// init vars
-		long lastTime = System.nanoTime();
-		double nsPerTick = 1000000000.0 / 60.0;
+        // Marca o tempo inicial
+        long marcoInicial_1 = System.nanoTime(); 
+		// Determina o intervalo desejado entre atualizações
+        double interTick = 1000000000.0 / 60.0; 
 
-		@SuppressWarnings("unused")
-		int ticks = 0;
-		@SuppressWarnings("unused")
-		int frames = 0;
+        @SuppressWarnings("unused")
+        int ticks = 0; // Contador de atualizações de lógica (ticks)
+        @SuppressWarnings("unused")
+        int frames = 0; // Contador de renderizações de frames
 
-		long lastTimer = System.currentTimeMillis();
-		double delta = 0;
+		// Marca o tempo inicial
+        long marcoInicial_2 = System.currentTimeMillis(); 
+		// Diferença acumulada entre o tempo atual e o último tick
+        double delta = 0; 
 
-		// while the program is running....
-		while (executar) {
+        // Loop principal do jogo, continua enquanto o jogo estiver em execução
+        while (executar) {
+            // Captura o tempo atual
+            long tempoAtual = System.nanoTime();
 
-			// get the current system time
-			long now = System.nanoTime();
-			// find delta by taking difference between now and last
-			delta += (now - lastTime) / nsPerTick;
-			lastTime = now;
+            // Calcula a diferença de tempo desde a última atualização e acumula em delta
+            delta += (tempoAtual - marcoInicial_1) / interTick;
+            marcoInicial_1 = tempoAtual; // Atualiza o tempo de referência para o próximo loop
 
-			// can render each frame...
-			boolean canRender = true;
+            // Variável para determinar se é possível renderizar um frame
+            boolean podeRenderizar = false;
 
-			// if ratio is greater than one, meaning...
-			while (delta >= 1) {
-				/*
-				 * if the current time - last / n, where n can be any real number is greater
-				 * than 1 update the game...
-				 */
-				ticks++;
-				tick();
-				delta--;
-				canRender = true;
-			}
+            // Se delta for maior ou igual a 1, é hora de atualizar a lógica do jogo
+            while (delta >= 1) {
+                ticks++; 
+                tick(); // Atualiza a lógica do jogo.
+                delta--;
+                podeRenderizar = true;
+            }
 
-			// sleep program so that not to many frames are produced (reduce lag)
-			try {
-				Thread.sleep(2);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+            // Dorme a thread por um curto período para evitar consumo excessivo de CPU
+            try {
+                Thread.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-			// if can render...
-			if (canRender) {
-				// increment frames and render
-				frames++;
-				render();
+            // Se puder renderizar, incrementa o contador de frames e chama o método render
+            if (podeRenderizar) {
+                frames++;
+                render(); // Renderiza o próximo frame do jogo
+            }
 
-			}
-
-			// if one second has passed...
-			if (System.currentTimeMillis() - lastTimer > 1000) {
-				// increment last timer, output frames to user
-				lastTimer += 1000;
-				//System.out.println(ticks + " ticks, " + frames + " frames");
-				frames = 0;
-				ticks = 0;
-			}
-		}
-	}
+            /* 
+			Se um segundo tiver passado desde o último tempo registrado, reinicia os contadores
+			
+			Utilize 'System.out.println(ticks + " ticks, " + frames + " frames");' dentro da condicional abaixo caso queira testar as atualizações de frame
+			*/
+            if (System.currentTimeMillis() - marcoInicial_2 > 1000) {
+                marcoInicial_2 += 1000;
+                frames = 0;
+                ticks = 0;
+            }
+        }
+    }
 	
+	// Método que atualiza a lógica do jogo a cada tick
 	public void tick() {
-		// update keyboard input
+		// Atualiza o estado das teclas pressionadas
 		controleTeclas.atualizaTeclas();
 		
-		// if current state exist, then update the game
-		if (Estado.getState() != null) {
-			
-			// increment tick count and get state of program
+		// Se o estado atual do jogo não for nulo, atualiza a lógica do jogo
+		if (Estado.getEstado() != null) {
 			atualizaFrame++;
-			Estado.getState().tick();
-
+			Estado.getEstado().tick();
 		}
 	}
 	
+	// Método responsável por renderizar o jogo na tela
 	public void render() {		
-		BufferStrategy bs = getBufferStrategy();
-		
-		// create a double buffering strategy
-		if (bs == null) {
-			createBufferStrategy(2);
-			return;
-		}
-		
-		Graphics g = bs.getDrawGraphics();
-		// create temp white rect that fills screen
-		g.setColor(new Color(0, 0, 0));
-		g.fillRect(0, 0, getWidth(), getHeight());
-		
-		/* ALL DRAWING HERE */
-		// init maps
-		ImageIcon forestStage = new ImageIcon("Imagem\\jogo\\forest_stage.gif");
-		
-		if (forestStage.getImage() != null) {
-	        g.drawImage(forestStage.getImage(), -900, -220, forestStage.getIconWidth() * 2, forestStage.getIconHeight() * 2, null);
-	    } else {
-	        System.out.println("Imagem não encontrada!");
-	    }
-		
-		// if current state exist, then render		
-		if (Estado.getState() != null) {		
-			atualizaFrame++;
-			Estado.getState().render(g);	
-		}
-					
-		/* ALL DRAWING HERE */
-		
-		g.dispose();
-		bs.show();
-	}
+		// Obtém o buffer do Canvas
+        BufferStrategy bs = getBufferStrategy(); 
+
+        // Se a estratégia de buffer ainda não existir, cria uma nova com duplo buffer
+        if (bs == null) {
+            createBufferStrategy(2);
+            return;
+        }
+        
+		// Obtém o contexto gráfico para desenhar
+        Graphics g = bs.getDrawGraphics(); 
+
+        // Preenche a tela com um retângulo preto para limpar a tela antes de desenhar
+        g.setColor(new Color(0, 0, 0));
+        g.fillRect(0, 0, getWidth(), getHeight());
+        
+        // Desenha o cenário do jogo (background)
+        ImageIcon cenario = new ImageIcon("Imagem\\jogo\\forest_stage.gif");
+        
+        // Verifica se a imagem foi carregada corretamente antes de desenhar
+        if (cenario.getImage() != null) {
+            // Desenha a imagem do cenário com tamanho dobrado para se ajustar à escala
+            g.drawImage(cenario.getImage(), -900, -220, cenario.getIconWidth() * 2, cenario.getIconHeight() * 2, null);
+        } else {
+            System.out.println("Imagem não encontrada!");
+        }
+        
+        // Se o estado atual do jogo não for nulo, renderiza o estado atual
+        if (Estado.getEstado() != null) {
+            atualizaFrame++;
+            Estado.getEstado().renderizar(g);
+        }
+        // Libera os recursos gráficos e mostra o próximo frame preparado na tela
+        g.dispose(); 
+        bs.show();
+    }
 	
+	// Método principal (main)
 	public static void main(String[] args) throws IOException {
 		Jogo game = new Jogo();
-		game.start();
+		game.iniciar();
 	}
 	
-	// GETTERS AND SETTERS
-	
-	/**
-	 * @description 
-	 * 	   gets key presses of user
-	*/
+	// GET controle de teclas (KeyListener)
 	public Teclas getTeclas() {
 		return controleTeclas;
 	}
 	
-	/**
-	 * @description 
-	 * 	   gets current game state
-	*/
+	// GET estado atual do jogo
 	public Estado getGameEstado() {
 		return gameEstado;
 	}
-
 }

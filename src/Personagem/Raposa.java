@@ -5,12 +5,17 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import Aplicacao.Jogo;
 import ManipularImagem.Animacao;
 import ManipularImagem.Imagens;
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.advanced.AdvancedPlayer;
 
 public class Raposa extends Posicao {
 
@@ -18,6 +23,7 @@ public class Raposa extends Posicao {
 	private int velX, velY;
 	private Jogo jogo;
 
+	// Constantes para estados da raposa
 	private final int parada = 0;
 	private final int correrDireita = 1;
 	private final int correrEsquerda = 2;
@@ -31,14 +37,19 @@ public class Raposa extends Posicao {
 	private final int atacar2 = 5;
 	private final int atacar3 = 7;
 	
-	//private final int ferido = 15;
+	private final int morrer = 15;
 	private final int verifica_fig = 19;
 	private final int gravidade = 1;
 	private final int velocidade = 2;
 	private final int velocidadePulo = -10;
 
-	private boolean[] animacoes = new boolean[20];
+	private boolean[] animacoes = new boolean[20]; // Array de animações
 
+	private Thread musicaThread; // Thread para tocar a música
+    private AdvancedPlayer player; // Reprodutor de música
+    public boolean musica_esta_tocando = false; // Flag para verificar se a música está tocando
+
+	// Animações da raposa
 	private Animacao raposaParada;
 	private Animacao raposaCorrendoDireita;
 	private Animacao raposaCorrendoEsquerda;
@@ -50,10 +61,10 @@ public class Raposa extends Posicao {
 	private Animacao raposaAtacando2;
 	private Animacao raposaAtacando3;
 	private Animacao raposaLevaDano;
-	//private Animacao raposaMorrendo;
+	private Animacao raposaMorrendo;
 
-	private boolean atingida;
-	private long invulneravel;
+	private boolean atingida; // Estado de ser atingida
+	private long invulneravel; // Tempo de invulnerabilidade
 
 	Random rand;
 
@@ -65,6 +76,7 @@ public class Raposa extends Posicao {
 
 		vida = 100;
 		
+		// Inicialização das animações
 		raposaParada 			= new Animacao(100, Imagens.p1_parado);
 		raposaCorrendoDireita	= new Animacao(100, Imagens.p1_correrDireita);
 		raposaCorrendoEsquerda 	= new Animacao(100, Imagens.p1_correrEsquerda);
@@ -76,9 +88,85 @@ public class Raposa extends Posicao {
 		raposaAtacando2 		= new Animacao(100, Imagens.p1_ataque_h);
 		raposaAtacando3			= new Animacao(100, Imagens.p1_ataque_j);
 		raposaLevaDano 			= new Animacao(100, Imagens.p1_levaDano);
-		//raposaMorrendo 			= new Animacao(100, Imagens.p1_morrendo);
+		raposaMorrendo 			= new Animacao(100, Imagens.p1_morrendo);
 	}
 
+	public int getVida() {
+		return vida;
+	}
+
+	public int getRaposaX() {
+		return (int) x;
+	}
+
+	/* 
+	Retorna o retângulo delimitador da raposa:
+	- Se a raposa está abaixada, retorna um retângulo menor e mais baixo
+	- Caso contrário, retorna um retângulo padrão
+	*/
+	public Rectangle getPersonagemRange() {
+
+		if (animacoes[abaixar])
+			return new Rectangle((int) x, (int) y + 30, 60, 80);
+
+		return new Rectangle((int) x, (int) y, 60, 110);
+	}
+
+	// Retorna o retângulo delimitador do ataque da raposa
+	public Rectangle getAtaqueRange() {
+
+		if (animacoes[atacar1] && raposaAtacando.i == 2)
+			return new Rectangle((int) x -10, (int) y + 10, 30, 30);
+		
+		if (animacoes[atacar2] && raposaAtacando2.i == 2)
+			return new Rectangle((int) x -30, (int) y + 10, 10, 30);
+		
+		if (animacoes[atacar3] && raposaAtacando3.i == 2)
+			return new Rectangle((int) x -10, (int) y + 10, 10, 30);
+
+		return new Rectangle((int) x, (int) y, 0, 0);
+	}
+
+	// Função para obter o frame atual da animação com base no estado da raposa
+	private BufferedImage getAnimFrameAtual() {
+		if (animacoes[correrDireita])
+			return raposaCorrendoDireita.getFrames();
+
+		else if (animacoes[correrEsquerda])
+			return raposaCorrendoEsquerda.getFrames();
+
+		else if (animacoes[abaixar])
+			return raposaAbaixada.getFrames();
+
+		else if (animacoes[pular])
+			return raposaPulando.getFrames();
+
+		else if (animacoes[pularDireita])
+			return raposaPulandoDireita.getFrames();
+
+		else if (animacoes[pularEsquerda])
+			return raposaPulandoEsquerda.getFrames();
+
+		else if (animacoes[atacar1])
+			return raposaAtacando.getFrames();
+		
+		else if (animacoes[atacar2])
+			return raposaAtacando2.getFrames();
+		
+		else if (animacoes[atacar3])
+			return raposaAtacando3.getFrames();
+		
+		else if (animacoes[levaDano])
+			return raposaLevaDano.getFrames();
+
+		else if (animacoes[morrer])
+			return raposaMorrendo.getFrames();
+		
+		else
+			return raposaParada.getFrames();
+	}
+
+	// Atualização dos estados da raposa
 	@Override
 	public void tick() {
 		raposaParada.atualizacaoEstados();
@@ -87,6 +175,7 @@ public class Raposa extends Posicao {
 		raposaCorrendoDireita.atualizacaoEstados();
 		raposaCorrendoEsquerda.atualizacaoEstados();
 
+		// Verifica se a animação de ataque está ativa
 		if (animacoes[atacar1])
 			raposaAtacando.atualizacaoEstados();
 		if (animacoes[atacar2])
@@ -94,6 +183,7 @@ public class Raposa extends Posicao {
 		if (animacoes[atacar3])
 			raposaAtacando3.atualizacaoEstados();
 		
+		// Verificação das teclas pressionadas para definir a ação da raposa
 		if (y == 280) {
 
 			if (jogo.getTeclas().esquerda && !jogo.getTeclas().cima) {
@@ -136,44 +226,29 @@ public class Raposa extends Posicao {
 				
 				pegaAnimacao(abaixar);
 
-				// if pressing g while crouching
+				// Verificação de ataques enquanto abaixado
 				if (jogo.getTeclas().G) {
 					velX = 0;
 					velY = 0;
-
-					// for punching frames, deactivate crouch
 					animacoes[abaixar] = false;
-
-					// reset and init true to state, punch
-					if (testeCorrendo())
+					if (verificarAnimacaoAtiva())
 						controlarAnimacao(atacar1);
-
 				}
 				
 				if (jogo.getTeclas().H) {
 					velX = 0;
 					velY = 0;
-
-					// for punching frames, deactivate crouch
 					animacoes[abaixar] = false;
-
-					// reset and init true to state, punch
-					if (testeCorrendo())
+					if (verificarAnimacaoAtiva())
 						controlarAnimacao(atacar2);
-
 				}
 				
 				if (jogo.getTeclas().J) {
 					velX = 0;
 					velY = 0;
-
-					// for punching frames, deactivate crouch
 					animacoes[abaixar] = false;
-
-					// reset and init true to state, punch
-					if (testeCorrendo())
+					if (verificarAnimacaoAtiva())
 						controlarAnimacao(atacar3);
-
 				}
 				
 				resetAnim(raposaAtacando, atacar1);
@@ -184,29 +259,27 @@ public class Raposa extends Posicao {
 			else if (jogo.getTeclas().G && !animacoes[abaixar]) {
 				velX = 0;
 				velY = 0;
-				if (testeCorrendo())
+				if (verificarAnimacaoAtiva())
 					pegaAnimacao(atacar1);
 			}
 			
 			else if (jogo.getTeclas().H && !animacoes[abaixar]) {
 				velX = 0;
 				velY = 0;
-				if (testeCorrendo())
+				if (verificarAnimacaoAtiva())
 					pegaAnimacao(atacar2);
 			}
 			
 			else if (jogo.getTeclas().J && !animacoes[abaixar]) {
 				velX = 0;
 				velY = 0;
-				if (testeCorrendo())
+				if (verificarAnimacaoAtiva())
 					pegaAnimacao(atacar3);
 			}
 			
 			else {
 				velX = 0;
 				velY = 0;
-
-				// reset anims that are instantaneous (only activate when pressed)
 				animacoes[abaixar] = false;
 				animacoes[correrDireita] = false;
 				animacoes[correrEsquerda] = false;
@@ -227,17 +300,12 @@ public class Raposa extends Posicao {
 			raposaPulandoDireita.atualizacaoEstados();
 			raposaPulandoEsquerda.atualizacaoEstados();
 
-			// if moving left
+			// Atualização das animações de pulo
 			if (velX < 0) {
-				// back flip
 				animacao_ataqueAereo(raposaPulandoEsquerda, pularEsquerda);
-				// if moving right
 			} else if (velX > 0) {
-				// front flip
 				animacao_ataqueAereo(raposaPulandoDireita, pularDireita);
-				// otherwise
 			} else {
-				// jump vertically
 				animacao_ataqueAereo(raposaPulando, pular);
 			}
 		}
@@ -247,12 +315,11 @@ public class Raposa extends Posicao {
 			velY = 0;
 		}
 
-		// reset ground attacks
 		resetAnim(raposaAtacando, atacar1);
 		resetAnim(raposaAtacando2, atacar2);
 		resetAnim(raposaAtacando3, atacar3);
 		
-		collisions();
+		colisoes(); // Função de colisões
 		
 		if (atingida) {	
 			if (System.currentTimeMillis() - invulneravel > 400) {
@@ -261,259 +328,130 @@ public class Raposa extends Posicao {
 				invulneravel += 400;
 			}
 		}
-		// update horizontal pos.
+
 		x += velX;
 
-		// if in air, fall
+		// Se pular, aplica a gravidade
 		if (y < 280)
-			cair();
+			movimentar();
 
 		if (y > 280)
 			y = 280;
 		
+		// Verifica os limites do Frame
 		verificaParede();
-
 	}
 
-	public void resetAnim(Animacao anim, int frame) {
-		// if called anim is played once...
-		if (anim.getReproducao()) {
-			// set anim to false
-			anim.setReproducao();
-			animacoes[frame] = false;
+	// Desenho das animações da raposa de acordo com o estado atual
+	@Override
+	public void renderizar(Graphics g) {
+		Graphics2D g2d = (Graphics2D) g;
+		if (atingida) {
+			int k = rand.nextInt(3);
+			g2d.translate(-k, k);
 		}
+		g.setColor(new Color(0, 0, 0, 125));
+		g.fillOval((int) x + 30, 200 * Jogo.escala, 64, 16);
 
+		if (animacoes[correrDireita])
+			g.drawImage(getAnimFrameAtual(), (int) (x - 9), (int) (y - 3), null);
+
+		else if (animacoes[correrEsquerda])
+			g.drawImage(getAnimFrameAtual(), (int) (x - 4), (int) y, null);
+
+		else if (animacoes[abaixar])
+			g.drawImage(getAnimFrameAtual(), (int) x, (int) y + 50, null);
+
+		else if (animacoes[pular])
+			g.drawImage(getAnimFrameAtual(), (int) x - 3, (int) y - 20, null);
+
+		else if (animacoes[pularDireita])
+			g.drawImage(getAnimFrameAtual(), (int) x - 15, (int) y - 15, null);
+
+		else if (animacoes[pularEsquerda])
+			g.drawImage(getAnimFrameAtual(), (int) x - 15, (int) y - 15, null);
+
+		else if (animacoes[atacar1])
+			g.drawImage(getAnimFrameAtual(), (int) x+3, (int) (y + 3), null);
+		
+		else if (animacoes[atacar2])
+			g.drawImage(getAnimFrameAtual(), (int) x, (int) (y + 3), null);
+		
+		else if (animacoes[atacar3])
+			g.drawImage(getAnimFrameAtual(), (int) x+3, (int) (y + 3), null);
+		
+		else if (animacoes[levaDano])
+			g.drawImage(getAnimFrameAtual(), (int) (x - 15), (int) (y + 1), null);
+
+		else if (animacoes[morrer])
+			g.drawImage(getAnimFrameAtual(), (int) (x - 15), (int) (y + 1), null);
+		
+		else
+			g.drawImage(getAnimFrameAtual(), (int) x, (int) y, null);
 	}
-	
-	public void cair(){
 
-		// update y speed
+	// Função para controlar a animação ativa
+	public void controlarAnimacao(int aux) {
+		for (int i = 0; i < 19; i++) {
+			animacoes[i] = false;
+		}
+		animacoes[aux] = true;
+	}
+
+	// Função para movimentar a raposa e aplicar gravidade
+	public void movimentar(){
 		velY += gravidade;
 
-		// if greater than max speed, just equal max speed
 		if (velY > velocidade){
 			velY = velocidade;
-		} 
+		} 		
 
-		// if moving left...		
 		if (velX < 0) {
-			// backflip
+			// Pular para trás
 			if (raposaPulandoEsquerda.getIndex() >= 2 && raposaPulandoEsquerda.getIndex() <= 3) {
 				velY = 0;
 			}
 		}
 
-		// if moving right...
 		if (velX > 0) {
-			// front flip
+			// Pular para frente
 			if (raposaPulandoDireita.getIndex() >= 2 && raposaPulandoDireita.getIndex() <= 3) {
 				velY = 0;
 			}
 		}
 
-		// if horizontally still...
 		if (velX == 0) {
-			// jump anims
+			// Pular
 			if (raposaPulando.getIndex() >= 3 && raposaPulando.getIndex() <= 4) {
 				velY = 0;
 			}
 		}
 
-		// update y by y-speed
 		y += velY;
-
-
 	}
 	
-	public void collisions() {
-
-		// if rectangle of player collides with enemy rectangle
+	// Verifica se há colisão entre o range do personagem e o range do inimigo
+	public void colisoes() {
 		if (jogo.getGameEstado().getCavaleiroAtaqueHit().intersects(getPersonagemRange())) {
 
-			// if not already hurting...
 			if (!atingida) {
 				controlarAnimacao(levaDano);
 				invulneravel = System.currentTimeMillis();
 				atingida = true;
-				vida-=3;
+				vida-=2;
+				tocarMusica("RecursoExterno\\Mp3\\golpeP2.mp3");
 			}
 
-			// freeze..
-
+			// Tempo de cooldown
 			try {
-				TimeUnit.MILLISECONDS.sleep(30);
+				TimeUnit.MILLISECONDS.sleep(20);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-
 		} 
-
 	}
 
-	@Override
-	public void render(Graphics g) {
-		// 2d graphics for transformations
-		Graphics2D g2d = (Graphics2D) g;
-
-		// when hit, vibrate randomly
-		if (atingida) {
-			int k = rand.nextInt(3);
-			g2d.translate(-k, k);
-		}
-		// draw shadow
-		g.setColor(new Color(0, 0, 0, 125));
-		g.fillOval((int) x + 30, 200 * Jogo.escala, 64, 16);
-
-		if (animacoes[correrDireita])
-			g.drawImage(getCurrentAnimFrame(), (int) (x - 9), (int) (y - 3), null);
-
-		else if (animacoes[correrEsquerda])
-			g.drawImage(getCurrentAnimFrame(), (int) (x - 4), (int) y, null);
-
-		else if (animacoes[abaixar])
-			g.drawImage(getCurrentAnimFrame(), (int) x, (int) y + 50, null);
-
-		else if (animacoes[pular])
-			g.drawImage(getCurrentAnimFrame(), (int) x - 3, (int) y - 20, null);
-
-		else if (animacoes[pularDireita])
-			g.drawImage(getCurrentAnimFrame(), (int) x - 15, (int) y - 15, null);
-
-		else if (animacoes[pularEsquerda])
-			g.drawImage(getCurrentAnimFrame(), (int) x - 15, (int) y - 15, null);
-
-		else if (animacoes[atacar1])
-			g.drawImage(getCurrentAnimFrame(), (int) x+3, (int) (y + 3), null);
-		
-		else if (animacoes[atacar2])
-			g.drawImage(getCurrentAnimFrame(), (int) x, (int) (y + 3), null);
-		
-		else if (animacoes[atacar3])
-			g.drawImage(getCurrentAnimFrame(), (int) x+3, (int) (y + 3), null);
-		
-		else if (animacoes[levaDano])
-			g.drawImage(getCurrentAnimFrame(), (int) (x - 15), (int) (y + 1), null);
-		
-		else
-			g.drawImage(getCurrentAnimFrame(), (int) x, (int) y, null);
-	}
-
-	private BufferedImage getCurrentAnimFrame() {
-
-		if (animacoes[correrDireita])
-			return raposaCorrendoDireita.getFrames();
-
-		else if (animacoes[correrEsquerda])
-			return raposaCorrendoEsquerda.getFrames();
-
-		else if (animacoes[abaixar])
-			return raposaAbaixada.getFrames();
-
-		else if (animacoes[pular])
-			return raposaPulando.getFrames();
-
-		else if (animacoes[pularDireita])
-			return raposaPulandoDireita.getFrames();
-
-		else if (animacoes[pularEsquerda])
-			return raposaPulandoEsquerda.getFrames();
-
-		else if (animacoes[atacar1])
-			return raposaAtacando.getFrames();
-		
-		else if (animacoes[atacar2])
-			return raposaAtacando2.getFrames();
-		
-		else if (animacoes[atacar3])
-			return raposaAtacando3.getFrames();
-		
-		else if (animacoes[levaDano])
-			return raposaLevaDano.getFrames();
-		
-		else
-			return raposaParada.getFrames();
-
-	}
-
-	public void pegaAnimacao(int unchanged) {
-
-		// make all false...
-		for (int i = 0; i < 19; i++) {
-			animacoes[i] = false;
-		}
-
-		// except active anim
-		animacoes[unchanged] = true;
-	}
-
-	public void verificaParede() {
-		// if x < 0...
-		if (x < -30) {
-			// do not go past left edge
-			x = -30;
-		}
-
-		// if x > 0
-		if (x > Jogo.largura + 150) {
-			// do not go past right edge
-			x = Jogo.largura + 150;
-		}
-	}
-
-	public boolean testeCorrendo() {
-
-		// counter
-		int i = 0;
-
-		// traverse through anims
-		for (boolean b : animacoes) {
-			// if false, increment counter
-			if (b == false)
-				i++;
-		}
-
-		// if all anims are false, return false
-		if (i == 19) {
-			return false;
-		}
-
-		// otherwise, true
-		return true;
-	}
-
-	public Rectangle getPersonagemRange() {
-
-		if (animacoes[abaixar])
-			return new Rectangle((int) x, (int) y + 30, 60, 80);
-
-		return new Rectangle((int) x, (int) y, 60, 110);
-	}
-
-	public Rectangle getAtaqueRange() {
-
-		if (animacoes[atacar1] && raposaAtacando.i == 2)
-			return new Rectangle((int) x + 20, (int) y + 10, 10, 30);
-		
-		if (animacoes[atacar2] && raposaAtacando2.i == 2)
-			return new Rectangle((int) x + 20, (int) y + 10, 20, 30);
-		
-		if (animacoes[atacar3] && raposaAtacando3.i == 2)
-			return new Rectangle((int) x + 20, (int) y + 10, 10, 30);
-
-		return new Rectangle((int) x, (int) y, 0, 0);
-	}
-
-	public void controlarAnimacao(int unchanged) {
-
-		// make all false...
-		for (int i = 0; i < 19; i++) {
-			animacoes[i] = false;
-		}
-
-		// except active anim
-		animacoes[unchanged] = true;
-	}
-
+	// Função para controlar a animação de ataque aéreo
 	public void animacao_ataqueAereo(Animacao anim, int index) {
 		if (jogo.getTeclas().G) {
 			controlarAnimacao(atacar1);
@@ -521,19 +459,82 @@ public class Raposa extends Posicao {
 			controlarAnimacao(atacar2);
 		}else if (jogo.getTeclas().J) {
 			controlarAnimacao(atacar3);
-		} else if (testeCorrendo()) {
+		} else if (verificarAnimacaoAtiva()) {
 			anim.atualizacaoEstados();
 			controlarAnimacao(index);
 		}
 
 	}
+
+	public void iniciarAnimacaoMorte() {
+		// Ativa a animação de morte
+		pegaAnimacao(morrer);
+		raposaMorrendo.atualizacaoEstados();
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					TimeUnit.MILLISECONDS.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+		pegaAnimacao(morrer);
+	}
+
+	// Resetar animações
+	public void resetAnim(Animacao anim, int frame) {
+		if (anim.getReproducao()) {
+			anim.setReproducao();
+			animacoes[frame] = false;
+		}
+	}
 	
-	public int getVida() {
-		return vida;
+	public void pegaAnimacao(int aux) {
+		for (int i = 0; i < 19; i++) {
+			animacoes[i] = false;
+		}
+		animacoes[aux] = true;
 	}
 
-	public int getRaposaX() {
-		return (int) x;
+	
+
+	public void tocarMusica(String caminhoArquivo) {
+        musicaThread = new Thread(() -> {
+            try (FileInputStream fis = new FileInputStream(caminhoArquivo)) {
+                player = new AdvancedPlayer(fis); // Inicializa o reprodutor de música
+                musica_esta_tocando = true; // Define que a música está tocando
+                player.play(); // Inicia a reprodução da música
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (JavaLayerException | IOException e) {
+                e.printStackTrace();
+            } finally {
+                musica_esta_tocando = false; // Define que a música parou de tocar
+            }
+        });
+        musicaThread.start(); // Inicia a thread de música
+    }
+
+	public void verificaParede() {
+		if (x < -30) {
+			x = -30;
+		}
+		if (x > Jogo.largura + 150) {
+			x = Jogo.largura + 150;
+		}
 	}
 
+	// Função para verificar se alguma animação está ativa
+	public boolean verificarAnimacaoAtiva() {
+		int i = 0;
+		for (boolean b : animacoes) {
+			if (b == false)
+				i++;
+		}
+		if (i == 19) {
+			return false;
+		}
+		return true;
+	}
 }
