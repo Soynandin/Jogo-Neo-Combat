@@ -84,7 +84,6 @@ public class Cavaleiro extends Posicao {
 
 	@Override
 	public void tick() {
-		// TODO Auto-generated method stub
 		cavaleiroParado.atualizacaoEstados();
 		cavaleiroAbaixada.atualizacaoEstados();
 
@@ -368,9 +367,7 @@ public class Cavaleiro extends Posicao {
 	}
 
 	@Override
-	public void render(Graphics g) {// ------------------------------------parei aqui
-		// TODO Auto-generated method stub
-
+	public void render(Graphics g) {
 		// 2d graphics for transformations
 		Graphics2D g2d = (Graphics2D) g;
 
